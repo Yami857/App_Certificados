@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Cargar Archivos Excel{% endblock %}
+
+{% block content %}
+<div class="form-card">
+  <div class="form-card-header">
+    <h1>Carga de Archivos de Calificaciones</h1>
+    <p>Suba las plantillas oficiales en Excel para actualizar la base de datos y calcular certificaciones.</p>
+  </div>
+
+  <div class="form-card-body">
+    <form method="POST" action="{{ url_for('certificados.cargar') }}" enctype="multipart/form-data" id="formCargaArchivos">
+      
+      <!-- Campo 1: Maestro de Estudiantes -->
+      <div class="upload-field-group">
+        <label class="field-label" for="archivo_estudiantes">
+          <span>Maestro de Estudiantes</span>
+          <span class="field-required">Obligatorio (.xlsx)</span>
+        </label>
+        <p class="field-hint">
+          Archivo maestro con datos biográficos y programas matriculados (Hoja: <code>Estudiantes</code>).
+        </p>
+        
+        <label class="file-dropzone" for="archivo_estudiantes" id="dropzone_estudiantes">
+          <div class="file-dropzone-icon" aria-hidden="true">
+            <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+          </div>
+          <div class="file-dropzone-text">
+            <div class="file-name-display" id="name_archivo_estudiantes">Haz clic para seleccionar Maestro_Estudiantes.xlsx</div>
+            <div class="file-help-text">Formatos permitidos: .xlsx, .xls</div>
+          </div>
+          <input type="file" id="archivo_estudiantes" name="archivo_estudiantes" accept=".xlsx,.xls" required>
+        </label>
+      </div>
+
+      <!-- Campo 2: Registro de Evaluaciones -->
+      <div class="upload-field-group">
+        <label class="field-label" for="archivo_evaluaciones">
+          <span>Registro de Evaluaciones</span>
+          <span class="field-required">Obligatorio (.xlsx)</span>
+        </label>
+        <p class="field-hint">
+          Registro detallado de calificaciones por módulo y porcentajes de asistencia (Hoja: <code>Evaluaciones</code>).
+        </p>
+        
+        <label class="file-dropzone" for="archivo_evaluaciones" id="dropzone_evaluaciones">
+          <div class="file-dropzone-icon" aria-hidden="true">
+            <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+          </div>
+          <div class="file-dropzone-text">
+            <div class="file-name-display" id="name_archivo_evaluaciones">Haz clic para seleccionar Registro_Evaluaciones.xlsx</div>
+            <div class="file-help-text">Formatos permitidos: .xlsx, .xls</div>
+          </div>
+          <input type="file" id="archivo_evaluaciones" name="archivo_evaluaciones" accept=".xlsx,.xls" required>
+        </label>
+      </div>
+
+      <!-- Instrucciones / Guía de Formato -->
+      <div class="info-box">
+        <strong>Estructura requerida para el procesamiento:</strong>
+        <ul>
+          <li><strong>Maestro de Estudiantes:</strong> Columnas obligatorias: <em>Identificacion, Nombre_Completo, Correo, Programa, Cohorte</em>.</li>
+          <li><strong>Registro de Evaluaciones:</strong> Columnas obligatorias: <em>Identificacion, Programa, Modulo, Nota, Asistencia_Pct, Fecha_Cierre</em>.</li>
+          <li>Los números de identificación se procesan estrictamente como texto para preservar ceros a la izquierda.</li>
+        </ul>
+      </div>
+
+      <!-- Acciones del Formulario -->
+      <div class="form-card-actions">
+        <a href="{{ url_for('certificados.tablero') }}" class="btn btn-secondary">
+          <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+          Volver al Tablero
+        </a>
+
+        <button type="submit" class="btn btn-gold" id="btnSubmit">
+          <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+          </svg>
+          Procesar y Cargar Archivos
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Actualizar el nombre del archivo seleccionado dinámicamente en el dropzone
+  document.addEventListener('DOMContentLoaded', function () {
+    function configurarInput(inputId, displayId, dropzoneId) {
+      var input = document.getElementById(inputId);
+      var display = document.getElementById(displayId);
+      var dropzone = document.getElementById(dropzoneId);
+
+      if (input && display && dropzone) {
+        input.addEventListener('change', function () {
+          if (input.files && input.files.length > 0) {
+            var fileName = input.files[0].name;
+            var fileSize = (input.files[0].size / 1024).toFixed(1) + ' KB';
+            display.textContent = fileName + ' (' + fileSize + ')';
+            dropzone.classList.add('has-file');
+          } else {
+            display.textContent = 'Haz clic para seleccionar el archivo';
+            dropzone.classList.remove('has-file');
+          }
+        });
+      }
+    }
+
+    configurarInput('archivo_estudiantes', 'name_archivo_estudiantes', 'dropzone_estudiantes');
+    configurarInput('archivo_evaluaciones', 'name_archivo_evaluaciones', 'dropzone_evaluaciones');
+  });
+</script>
+{% endblock %}

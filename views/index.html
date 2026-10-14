@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}Tablero de Certificados{% endblock %}
+
+{% block content %}
+<!-- Encabezado de Página -->
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Tablero de Control Académico</h1>
+    <p class="page-description">
+      Supervisión de calificaciones, asistencia y emisión oficial de certificados según las reglas R1 a R6.
+    </p>
+  </div>
+  <div class="page-actions">
+    <a href="{{ url_for('certificados.cargar') }}" class="btn btn-secondary">
+      <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+      </svg>
+      Cargar Nuevos Excel
+    </a>
+    
+    <a href="{{ url_for('certificados.descargar_todos') }}" class="btn btn-gold" title="Descargar paquete ZIP con todos los certificados aprobados y de participación">
+      <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+      </svg>
+      Descargar Todos (.zip)
+    </a>
+  </div>
+</div>
+
+<!-- Tarjetas de Métricas Globales -->
+<section class="metrics-grid" aria-label="Resumen de indicadores">
+  <div class="metric-card highlight">
+    <span class="metric-label">
+      Total Certificables
+      <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+    </span>
+    <span class="metric-value">{{ resumen.total_certificables }}</span>
+    <span class="metric-desc">Estudiantes con certificado listo para emisión</span>
+  </div>
+
+  <div class="metric-card success">
+    <span class="metric-label">
+      Aprobación
+      <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+      </svg>
+    </span>
+    <span class="metric-value">{{ resumen.aprobacion }}</span>
+    <span class="metric-desc">Nota &ge; 70 y Asistencia &ge; 80%</span>
+  </div>
+
+  <div class="metric-card info">
+    <span class="metric-label">
+      Participación
+      <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+      </svg>
+    </span>
+    <span class="metric-value">{{ resumen.participacion }}</span>
+    <span class="metric-desc">Nota &lt; 70 y Asistencia &ge; 80%</span>
+  </div>
+
+  <div class="metric-card neutral">
+    <span class="metric-label">
+      Sin Certificado
+      <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+      </svg>
+    </span>
+    <span class="metric-value">{{ resumen.sin_certificado }}</span>
+    <span class="metric-desc">Asistencia &lt; 80% (no elegible)</span>
+  </div>
+
+  <div class="metric-card warning">
+    <span class="metric-label">
+      Inconsistencias
+      <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+    </span>
+    <span class="metric-value">{{ resumen.inconsistencias }}</span>
+    <span class="metric-desc">Requieren atención administrativa</span>
+  </div>
+</section>
+
+<!-- Panel Destacado de Inconsistencias (Alerta R6) -->
+{% if inconsistencias and inconsistencias|length > 0 %}
+<section class="inconsistencies-section" aria-label="Panel de alertas e inconsistencias">
+  <div class="alert-banner">
+    <div class="alert-banner-header">
+      <div class="alert-icon-wrap" aria-hidden="true">
+        <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <div>
+        <h2 class="alert-banner-title">Panel de Alertas: {{ inconsistencias|length }} Inconsistencias Detectadas (Regla R6)</h2>
+        <p class="alert-banner-subtitle">
+          Los siguientes registros no se certifican y han sido apartados debido a discrepancias entre los archivos de estudiantes y evaluaciones o asistencia crítica.
+        </p>
+      </div>
+    </div>
+    
+    <div class="alert-banner-body">
+      <div class="inconsistencies-grid">
+        {% for inc in inconsistencias %}
+          <article class="inconsistency-card">
+            <div class="inconsistency-top">
+              <div>
+                <span class="inconsistency-id">ID: {{ inc.identificacion }}</span>
+                <div class="inconsistency-name">{{ inc.nombre_completo }}</div>
+                <div class="inconsistency-program">{{ inc.programa }}</div>
+              </div>
+              <span class="badge badge-inconsistencia">
+                <span class="badge-dot"></span> Inconsistencia
+              </span>
+            </div>
+            
+            <div class="inconsistency-reason">
+              <strong>Motivo:</strong> {{ inc.motivo }}
+            </div>
+
+            <div class="inconsistency-metrics">
+              <span>Nota Promedio: <strong>{{ "%.2f"|format(inc.promedio) if inc.promedio is not none else "Sin datos" }}</strong></span>
+              <span>Asistencia: <strong>{{ "%.2f"|format(inc.asistencia) ~ "%" if inc.asistencia is not none else "Sin datos" }}</strong></span>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- Listado General de Estudiantes Clasificados -->
+<section class="table-section" aria-label="Listado de estudiantes clasificados">
+  <div class="table-header-bar">
+    <div class="table-title-group">
+      <h2>Estudiantes Clasificados ({{ estudiantes|length }})</h2>
+      <p>Listado completo procesado con notas, asistencias, dictamen y descarga individual de certificado.</p>
+    </div>
+    
+    <div class="table-search-box">
+      <svg class="table-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <input type="text" id="filtroTabla" placeholder="Buscar por nombre, ID o programa..." aria-label="Filtrar estudiantes en la tabla">
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table" id="tablaEstudiantes">
+      <thead>
+        <tr>
+          <th scope="col">Identificación</th>
+          <th scope="col">Estudiante</th>
+          <th scope="col">Programa</th>
+          <th scope="col">Nota Promedio</th>
+          <th scope="col">Asistencia</th>
+          <th scope="col">Condición Académica</th>
+          <th scope="col" style="text-align: right;">Certificado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for est in estudiantes %}
+          <tr class="{% if est.es_inconsistencia %}row-inconsistent{% endif %}">
+            <td class="cell-id">{{ est.identificacion }}</td>
+            <td>
+              <div class="cell-name">{{ est.nombre_completo if est.nombre_completo else "(Sin nombre registrado)" }}</div>
+              {% if est.correo %}
+                <span class="cell-email">{{ est.correo }}</span>
+              {% endif %}
+            </td>
+            <td class="cell-program">
+              <span>{{ est.programa }}</span>
+              {% if est.cohorte %}
+                <small style="display:block; color: var(--color-text-muted);">Cohorte: {{ est.cohorte }}</small>
+              {% endif %}
+            </td>
+            <td class="cell-numeric">
+              {% if est.promedio is not none %}
+                {{ "%.2f"|format(est.promedio) }}
+              {% else %}
+                <span style="color: var(--color-text-muted);">&mdash;</span>
+              {% endif %}
+            </td>
+            <td class="cell-numeric">
+              {% if est.asistencia is not none %}
+                {{ "%.2f"|format(est.asistencia) }}%
+              {% else %}
+                <span style="color: var(--color-text-muted);">&mdash;</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if est.es_inconsistencia %}
+                <span class="badge badge-inconsistencia" title="{{ est.motivo_inconsistencia }}">
+                  <span class="badge-dot"></span> Inconsistencia
+                </span>
+              {% elif est.estado == 'Aprobación' %}
+                <span class="badge badge-aprobacion">
+                  <span class="badge-dot"></span> Aprobación
+                </span>
+              {% elif est.estado == 'Participación' %}
+                <span class="badge badge-participacion">
+                  <span class="badge-dot"></span> Participación
+                </span>
+              {% elif est.estado == 'Sin certificado' %}
+                <span class="badge badge-sin-certificado">
+                  <span class="badge-dot"></span> Sin Certificado
+                </span>
+              {% else %}
+                <span class="badge badge-sin-certificado">
+                  {{ est.estado }}
+                </span>
+              {% endif %}
+            </td>
+            <td style="text-align: right; white-space: nowrap;">
+              {% if est.puede_certificar and not est.es_inconsistencia %}
+                <a href="{{ url_for('certificados.descargar_certificado', identificacion=est.identificacion, programa=est.programa) }}" 
+                   class="btn-table-download" 
+                   target="_blank" 
+                   rel="noopener"
+                   title="Abrir o descargar certificado en formato PDF">
+                  <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                  Descargar PDF
+                </a>
+              {% elif est.es_inconsistencia %}
+                <span class="badge-disabled" title="No elegible por inconsistencia administrativa">No emitible</span>
+              {% else %}
+                <span class="badge-disabled" title="No cumple con la asistencia mínima del 80%">No elegible</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 2.5rem; color: var(--color-text-muted);">
+              No se han encontrado registros de estudiantes. Utilice el botón superior para cargar los archivos Excel.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Filtro de búsqueda en tiempo real
+  document.addEventListener('DOMContentLoaded', function () {
+    var searchInput = document.getElementById('filtroTabla');
+    var tableBody = document.querySelector('#tablaEstudiantes tbody');
+
+    if (searchInput && tableBody) {
+      searchInput.addEventListener('input', function (e) {
+        var term = e.target.value.toLowerCase().trim();
+        var rows = tableBody.querySelectorAll('tr');
+
+        rows.forEach(function (row) {
+          var text = row.textContent.toLowerCase();
+          if (text.includes(term)) {
+            row.style.display = '';
+          } else {
+            row.style.display = 'none';
+          }
+        });
+      });
+    }
+  });
+</script>
+{% endblock %}
