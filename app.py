@@ -1,10 +1,16 @@
+from pathlib import Path
+
 from flask import Flask
 from controllers.certificados import bp as certificados_bp
 
+# Carpeta donde vive este archivo: las rutas no dependen
+# desde dónde se ejecute la app (producción/Vercel).
+BASE_DIR = Path(__file__).resolve().parent
+
 app = Flask(
     __name__,
-    template_folder="views",
-    static_folder="views/static",
+    template_folder=str(BASE_DIR / "views"),
+    static_folder=str(BASE_DIR / "views" / "static"),
 )
 app.secret_key = "academia_certificados_secret_key"
 
