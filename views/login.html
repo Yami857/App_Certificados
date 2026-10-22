@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entrar - App de Certificados</title>
+
+  <!-- Misma hoja de estilos institucional de la Academia -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="login-body">
+  <main class="login-wrapper">
+    <div class="login-card">
+      <!-- Encabezado institucional: azul marino con detalles dorados -->
+      <header class="login-card-header">
+        <div class="login-crest" aria-hidden="true">A</div>
+        <h1>Academia</h1>
+        <p>Control de Certificaciones</p>
+      </header>
+
+      <div class="login-card-body">
+        <!-- Aviso de modo demostración: aparece solo si faltan las variables de entorno -->
+        {% if modo_demo %}
+          <div class="login-demo" role="status">
+            <strong>Modo demostración</strong>
+            <p>No se encontraron las variables de entorno, así que se usan usuarios de prueba:</p>
+            <ul>
+              {% for usuario in demo_usuarios %}
+                <li>
+                  <code>{{ usuario.correo }}</code> / <code>{{ usuario.clave }}</code>
+                  (rol: {{ usuario.rol }})
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <!-- Mensajes flash (por ejemplo, al cerrar sesión) -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}" role="alert" style="margin-bottom: 1rem;">
+                <div class="alert-content"><span>{{ message }}</span></div>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <!-- Mensaje rojo cuando el correo o la contraseña no coinciden -->
+        {% if error %}
+          <div class="login-error" role="alert">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('auth.login') }}" class="login-form">
+          <label class="login-label" for="correo">Correo</label>
+          <input
+            class="login-input"
+            type="email"
+            id="correo"
+            name="correo"
+            value="{{ correo }}"
+            placeholder="tu.correo@academia.com"
+            autocomplete="username"
+            required
+            autofocus
+          >
+
+          <label class="login-label" for="clave">Contraseña</label>
+          <input
+            class="login-input"
+            type="password"
+            id="clave"
+            name="clave"
+            placeholder="Tu contraseña"
+            autocomplete="current-password"
+            required
+          >
+
+          <button type="submit" class="btn btn-gold login-submit">Entrar</button>
+        </form>
+
+        <p class="login-footnote">Acceso restringido al personal autorizado de la Academia.</p>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

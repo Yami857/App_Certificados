@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Sin permiso{% endblock %}
+
+{% block content %}
+<!-- Página amable para cuando una persona intenta entrar a una sección de administración -->
+<section class="denied-section">
+  <div class="denied-card">
+    <div class="denied-code" aria-hidden="true">403</div>
+
+    <h1 class="denied-title">Esta sección es solo para administradores</h1>
+    <p class="denied-text">
+      Tu cuenta puede consultar el tablero y los certificados, pero no cargar
+      archivos ni emitir certificados en lote.
+    </p>
+
+    <!-- Datos de la sesión activa: quedan a la vista para saber con quién se entró -->
+    <dl class="denied-session">
+      <div>
+        <dt>Correo</dt>
+        <dd>{{ session.get('usuario_correo') or 'Sin sesión iniciada' }}</dd>
+      </div>
+      <div>
+        <dt>Rol</dt>
+        <dd>
+          <span class="denied-role {% if session.get('usuario_rol') == 'admin' %}denied-role-admin{% endif %}">
+            {{ session.get('usuario_rol') or 'invitado' }}
+          </span>
+        </dd>
+      </div>
+    </dl>
+
+    <div class="denied-actions">
+      <a href="{{ url_for('certificados.tablero') }}" class="btn btn-primary">
+        Volver al tablero
+      </a>
+      <a href="{{ url_for('auth.salir') }}" class="btn btn-secondary">
+        Salir
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

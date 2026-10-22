@@ -22,28 +22,46 @@
         </div>
       </a>
       
-      <nav>
-        <ul class="navbar-nav">
-          <li>
-            <a href="{{ url_for('certificados.tablero') }}" 
-               class="nav-link {% if request.endpoint == 'certificados.tablero' %}active{% endif %}">
-              <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-              </svg>
-              Tablero
-            </a>
-          </li>
-          <li>
-            <a href="{{ url_for('certificados.cargar') }}" 
-               class="nav-link {% if request.endpoint == 'certificados.cargar' %}active{% endif %}">
-              <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-              </svg>
-              Cargar Archivos
-            </a>
-          </li>
-        </ul>
-      </nav>
+      <div class="navbar-actions">
+        <nav>
+          <ul class="navbar-nav">
+            <li>
+              <a href="{{ url_for('certificados.tablero') }}" 
+                 class="nav-link {% if request.endpoint == 'certificados.tablero' %}active{% endif %}">
+                <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+                Tablero
+              </a>
+            </li>
+            {% if session.get('usuario_rol') == 'admin' %}
+            <li>
+              <a href="{{ url_for('certificados.tablero') }}#panel-admin" class="nav-link">
+                <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                </svg>
+                Panel admin
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </nav>
+
+        {% if session.get('usuario_correo') %}
+          <!-- Datos de la sesión activa: correo, rol y botón para salir -->
+          <div class="navbar-user">
+            <div class="navbar-user-info">
+              <span class="user-email" title="{{ session.get('usuario_correo') }}">
+                {{ session.get('usuario_correo') }}
+              </span>
+              <span class="user-role user-role-{{ session.get('usuario_rol') }}">
+                {{ session.get('usuario_rol') }}
+              </span>
+            </div>
+            <a href="{{ url_for('auth.salir') }}" class="btn btn-sm btn-logout">Salir</a>
+          </div>
+        {% endif %}
+      </div>
     </div>
   </header>
 

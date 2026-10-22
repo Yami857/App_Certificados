@@ -8,7 +8,8 @@ esta app web lo automatiza.
 - `uv sync` — instalar dependencias.
 - `uv run python cargar_datos.py` — crear tablas y cargar los Excel a la BD.
 - `uv run python app.py` — servidor Flask en puerto 5000.
-- Sin suite de pruebas, CI ni linter: verificar con las cifras de control de abajo.
+- `uv run pytest` — pruebas automáticas (`tests/test_app.py`, 4 pruebas; no
+  dependen del `.env`: definen sus propias credenciales de prueba).
 - Construcción por etapas: ver `PLAN.md` (1 cruce → 2 backend → 3 interfaz).
 
 ## Decisiones técnicas (no reabrir sin motivo)
@@ -33,7 +34,10 @@ esta app web lo automatiza.
 - Sin `DATABASE_URL` en `.env` la app usa SQLite local (`academia.db`, archivo
   trackeado en git: correr la app lo modifica). Con `DATABASE_URL` usa Supabase
   (PostgreSQL) vía `psycopg` con `prepare_threshold=None` (pooler de Supabase).
-- Plantilla de entorno: copiar `.env.ejemplo` a `.env` (solo `DATABASE_URL=`).
+- Plantilla de entorno: copiar `.env.ejemplo` a `.env` (`DATABASE_URL`,
+  `SECRET_KEY`, `ADMIN_CORREO/ADMIN_CLAVE`, `USUARIO_CORREO/USUARIO_CLAVE`).
+  `.env` está en `.gitignore`: nunca se sube. Sin esas credenciales la app usa
+  usuarios de demostración y lo avisa en `/login`.
 - `models/datos.py` es el ÚNICO archivo que habla con la BD. Usa sus helpers
   (`obtener_conexion`, `es_sqlite`): los placeholders cambian según motor
   (`?` SQLite vs `%s` Postgres). `guardar_*` hace `DELETE` + reinserción total.
@@ -62,8 +66,22 @@ esta app web lo automatiza.
   (toda la lógica, nunca en la interfaz), Salón = `views/` (solo muestra).
 - `app.py` crea `app` (Flask con `template_folder="views"`,
   `static_folder="views/static"`, rutas en blueprint `controllers/certificados.py`).
-- Rutas: `/` tablero, `/cargar` (subir ambos Excel), `/certificado/<id>/<programa>`
-  (PDF; 404 si no es certificable), `/descargar-todos` (.zip en memoria).
+- Rutas: `/login` y `/salir` (sesión con `session`), `/` tablero con panel de
+  administrador (`#panel-admin`), `/cargar` (POST: procesa ambos Excel subidos
+  en memoria y recalcula con `accion=ver|descargar`), `/certificado/<id>/<programa>`
+  (PDF; 404 si no es certificable), `/descargar-todos` (.zip en memoria),
+  `/descargar-excel` (resultados de fábrica en .xlsx).
+  Las rutas de datos usan el decorador `requiere_login` (en
+  `controllers/auth.py`); la validación de credenciales vive en
+  `services/autenticacion.py` y lee variables de entorno.
+  `solo_admin` protege `/cargar` y `/descargar-todos` (403 con
+  `views/sin_permiso.html`); el rol `usuario` no ve el panel de
+  inconsistencias ni los botones de administración.
+  Los Excel subidos no se guardan: `procesar_datos_completos` acepta
+  `archivo_estudiantes/archivo_evaluaciones` (BytesIO) y, sin ellos, sigue
+  leyendo la BD o `Insumos/`. Límite: 4 MB por archivo y 4.5 MB por petición
+  (`MAX_CONTENT_LENGTH`); el Excel de resultados se arma en memoria con
+  `services/generador_excel.py`.
   `controllers/` solo orquesta (tiene fallbacks si falta la plantilla); la lógica
   vive en `models/` y `services/` (`carga_excel.py`, `generador_pdf.py` con fpdf2,
   A4 horizontal). `views/` solo Jinja: azul marino `#14213D`, dorado `#B8923D`.

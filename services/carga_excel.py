@@ -33,15 +33,12 @@ def _resolver_ruta_insumo(nombre_archivo: str) -> Path:
     return BASE_DIR / "insumos" / nombre_archivo
 
 
-def procesar_excel_estudiantes(origen: Optional[Union[str, Path, object]] = None) -> int:
-    """Lee y procesa el archivo de Maestro de Estudiantes (hoja 'Estudiantes').
+def leer_estudiantes(origen: Union[str, Path, object]) -> pd.DataFrame:
+    """Lee y limpia la hoja 'Estudiantes' sin guardar nada en la base de datos.
 
-    Guarda los registros en Supabase mediante models.datos.guardar_estudiantes.
-    Retorna la cantidad de estudiantes guardados.
+    `origen` puede ser una ruta a un Excel o un archivo en memoria (BytesIO).
+    Devuelve solo las columnas obligatorias, con la identificación como texto.
     """
-    if origen is None:
-        origen = _resolver_ruta_insumo("Maestro_Estudiantes.xlsx")
-
     # Leer especificando la hoja y tipos de datos
     df = pd.read_excel(origen, sheet_name="Estudiantes", dtype={"Identificacion": str})
 
@@ -60,19 +57,14 @@ def procesar_excel_estudiantes(origen: Optional[Union[str, Path, object]] = None
     df["Programa"] = df["Programa"].astype(str).str.strip()
     df["Cohorte"] = df["Cohorte"].astype(str).str.strip()
 
-    # Guardar en base de datos
-    return guardar_estudiantes(df[COLUMNAS_ESTUDIANTES])
+    return df[COLUMNAS_ESTUDIANTES]
 
 
-def procesar_excel_evaluaciones(origen: Optional[Union[str, Path, object]] = None) -> int:
-    """Lee y procesa el archivo de Registro de Evaluaciones (hoja 'Evaluaciones').
+def leer_evaluaciones(origen: Union[str, Path, object]) -> pd.DataFrame:
+    """Lee y limpia la hoja 'Evaluaciones' sin guardar nada en la base de datos.
 
-    Guarda los registros en Supabase mediante models.datos.guardar_evaluaciones.
-    Retorna la cantidad de evaluaciones guardadas.
+    `origen` puede ser una ruta a un Excel o un archivo en memoria (BytesIO).
     """
-    if origen is None:
-        origen = _resolver_ruta_insumo("Registro_Evaluaciones.xlsx")
-
     # Leer especificando la hoja y tipos de datos
     df = pd.read_excel(origen, sheet_name="Evaluaciones", dtype={"Identificacion": str})
 
@@ -93,7 +85,32 @@ def procesar_excel_evaluaciones(origen: Optional[Union[str, Path, object]] = Non
     if "Fecha_Cierre" in df.columns:
         df["Fecha_Cierre"] = pd.to_datetime(df["Fecha_Cierre"], errors="coerce").dt.strftime("%Y-%m-%d")
 
-    # Guardar en base de datos
+    return df[COLUMNAS_EVALUACIONES]
+
+
+def procesar_excel_estudiantes(origen: Optional[Union[str, Path, object]] = None) -> int:
+    """Lee el Maestro de Estudiantes y lo guarda en la base de datos.
+
+    Si no se indica `origen`, usa el Excel de la carpeta Insumos.
+    Retorna la cantidad de estudiantes guardados.
+    """
+    if origen is None:
+        origen = _resolver_ruta_insumo("Maestro_Estudiantes.xlsx")
+
+    df = leer_estudiantes(origen)
+    return guardar_estudiantes(df[COLUMNAS_ESTUDIANTES])
+
+
+def procesar_excel_evaluaciones(origen: Optional[Union[str, Path, object]] = None) -> int:
+    """Lee el Registro de Evaluaciones y lo guarda en la base de datos.
+
+    Si no se indica `origen`, usa el Excel de la carpeta Insumos.
+    Retorna la cantidad de evaluaciones guardadas.
+    """
+    if origen is None:
+        origen = _resolver_ruta_insumo("Registro_Evaluaciones.xlsx")
+
+    df = leer_evaluaciones(origen)
     return guardar_evaluaciones(df[COLUMNAS_EVALUACIONES])
 
 
